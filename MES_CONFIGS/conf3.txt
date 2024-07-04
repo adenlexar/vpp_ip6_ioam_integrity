@@ -1,0 +1,6 @@
+create memif socket id 2 filename memif2.sock
+create interface memif socket-id 2 id 0 slave
+set interface ip address memif2/0 db02::2/64
+set interface state memif2/0 up
+
+ip route add db01::0/64 via db02::1
