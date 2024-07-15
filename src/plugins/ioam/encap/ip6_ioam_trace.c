@@ -38,7 +38,7 @@
 #include <timestamp/timestamp.h>
 // For queue depth
 #include <linux/if_packet.h>
-#include <plugins/af_packet/af_packet.h>
+//#include <plugins/af_packet/af_packet.h>
 
 /* Timestamp precision multipliers for seconds, milliseconds, microseconds
  * and nanoseconds respectively.
@@ -460,41 +460,43 @@ ip6_hbh_ioam_trace_data_list_handler (vlib_buffer_t * b, ip6_header_t * ip, ip6_
     /*
     * Reporting is dependent on what device is selected, see device_driver_info.c
     */
-    if (trace_type & IOAM_BIT_QUEUE_DEPTH)
-    {
-      u32 depth = IOAM_EMPTY_FIELD_U32;
-      if (profile->queue_depth_type & QUEUE_DEPTH_AF_PACKET)
-      {
-        // Get TX hardware interface index
-        u32 txid = adj->rewrite_header.sw_if_index;
-        txid = (vnet_get_sup_hw_interface (hm->vnet_main, txid))->hw_if_index;
-        af_packet_main_t *am = &af_packet_main;
-        /* Maybe there's a better way to obtain apif from hw_if_index */
-        vnet_hw_interface_t *hw = vnet_get_hw_interface (hm->vnet_main, txid);
-        af_packet_if_t *apif = pool_elt_at_index (am->interfaces, hw->dev_instance);
-        u8 *tx_block_start = *(apif->tx_queues->tx_ring); //MODIF apif->tx_ring;
-        struct tpacket2_hdr *tph_tx = (struct tpacket2_hdr *)tx_block_start;
-        u32 frame_size = apif->tx_queues->tx_req->req.tp_frame_size; //MODIF apif->tx_req->tp_frame_size; 
-        u32 frame_num = apif->tx_queues->tx_req->req.tp_frame_nr; //MODIF apif->tx_req->tp_frame_nr;
-        do
-        {
-          if (tph_tx->tp_status == TP_STATUS_AVAILABLE)
-          {
-            depth++;
-          }
-          tph_tx = (struct tpacket2_hdr *) (((u8 *)tph_tx) + frame_size);
-        } while (--frame_num);
-      }
-      // Trick here is similar to transit delay except, the queue depth is saved in unused[7]
-      else if (profile->queue_depth_type & QUEUE_DEPTH_DPDK)
-      {
-        u32 *queueSize_queueDepth = &vnet_buffer2 (b)->unused[7];
-        // Upper bytes is the total queue size, we only intrested in lower
-        depth = 0x0000FFFF & clib_net_to_host_u32(*queueSize_queueDepth);
-      }
-      *elt = clib_host_to_net_u32 (depth);
-      elt++;
-    }
+
+    // if (trace_type & IOAM_BIT_QUEUE_DEPTH)
+    // {
+    //   u32 depth = IOAM_EMPTY_FIELD_U32;
+      
+    //   if (profile->queue_depth_type & QUEUE_DEPTH_AF_PACKET)
+    //   {
+    //     // Get TX hardware interface index
+    //     u32 txid = adj->rewrite_header.sw_if_index;
+    //     txid = (vnet_get_sup_hw_interface (hm->vnet_main, txid))->hw_if_index;
+    //     af_packet_main_t *am = &af_packet_main;
+    //     /* Maybe there's a better way to obtain apif from hw_if_index */
+    //     vnet_hw_interface_t *hw = vnet_get_hw_interface (hm->vnet_main, txid);
+    //     af_packet_if_t *apif = pool_elt_at_index (am->interfaces, hw->dev_instance);
+    //     u8 *tx_block_start = *(apif->tx_queues->tx_ring); //MODIF apif->tx_ring;
+    //     struct tpacket2_hdr *tph_tx = (struct tpacket2_hdr *)tx_block_start;
+    //     u32 frame_size = apif->tx_queues->tx_req->req.tp_frame_size; //MODIF apif->tx_req->tp_frame_size; 
+    //     u32 frame_num = apif->tx_queues->tx_req->req.tp_frame_nr; //MODIF apif->tx_req->tp_frame_nr;
+    //     do
+    //     {
+    //       if (tph_tx->tp_status == TP_STATUS_AVAILABLE)
+    //       {
+    //         depth++;
+    //       }
+    //       tph_tx = (struct tpacket2_hdr *) (((u8 *)tph_tx) + frame_size);
+    //     } while (--frame_num);
+    //   }
+    //   // Trick here is similar to transit delay except, the queue depth is saved in unused[7]
+    //   else if (profile->queue_depth_type & QUEUE_DEPTH_DPDK)
+    //   {
+    //     u32 *queueSize_queueDepth = &vnet_buffer2 (b)->unused[7];
+    //     // Upper bytes is the total queue size, we only intrested in lower
+    //     depth = 0x0000FFFF & clib_net_to_host_u32(*queueSize_queueDepth);
+    //   }
+    //   *elt = clib_host_to_net_u32 (depth);
+    //   elt++;
+    // }
     /* TODO */
     if (trace_type & IOAM_BIT_CHECKSUM_COMPLEMENT)
     {

@@ -1656,12 +1656,15 @@ ip6_set_ioam_rewrite_command_fn (vlib_main_t * vm,
 
   while (unformat_check_input (input) != UNFORMAT_END_OF_INPUT)
   {
-    if (unformat (input, "dst_addr %U", unformat_ip6_address, &dst_addr))
+    if (unformat (input, "dst_addr %U", unformat_ip6_address, &dst_addr)){
       has_dst_addr = 1;
-    else if (unformat (input, "trace"))
+    }
+    else if (unformat (input, "trace")){
       has_trace_option = 1;
-    else if (unformat (input, "pot"))
+    }
+    else if (unformat (input, "pot")){
       has_pot_option = 1;
+    }
     else if (unformat (input, "seqno"))
       has_seqno_option = 1;
     else if (unformat (input, "analyse"))

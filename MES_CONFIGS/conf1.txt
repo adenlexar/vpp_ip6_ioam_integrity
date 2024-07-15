@@ -1,6 +1,21 @@
 create memif socket id 1 filename memif1.sock
-create interface memif socket-id 1 id 0 master
-set interface ip address memif1/0 db01::1/64
+create interface memif socket-id 1 id 0 slave
+set interface ip address memif1/0 db00::1/64
 set interface state memif1/0 up
 
-ip route add db02::0/64 via db01::1
+create memif socket id 2 filename memif2.sock
+create interface memif socket-id 2 id 0 master
+set interface ip address memif2/0 db01::1/64
+set interface state memif2/0 up
+
+ip route add db01::/64 via db01::2
+ip route add db02::/64 via db01::2
+ip route add db03::/64 via db01::2
+
+ip route add db00::/64 via db00::2
+
+set ioam-trace profile trace-type 0x900000 namespace-id 0 num-elts 3 node-id-short 1 node-type encap option-type prealloc
+
+classify table miss-next ip6-node ip6-lookup mask l3 ip6 dst
+classify session acl-hit-next ip6-node ip6-add-hop-by-hop table-index 0 match l3 ip6 dst db03::2 ioam-encap lol
+set interface input acl intfc memif1/0 ip6-table 0
