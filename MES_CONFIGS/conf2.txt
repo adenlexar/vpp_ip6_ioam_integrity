@@ -14,6 +14,6 @@ ip route add db03::/64 via db02::2
 ip route add db01::/64 via db01::1
 ip route add db00::/64 via db01::1
 
-set ioam-trace profile trace-type 0x900000 namespace-id 0 num-elts 2 node-id-short 2 node-type transit option-type prealloc
+set ioam-trace profile trace-type 0x900000 namespace-id 0 num-elts 3 node-id-short 2 node-type transit option-type prealloc
 
 

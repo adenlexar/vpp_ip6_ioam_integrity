@@ -227,6 +227,13 @@ typedef CLIB_PACKED (struct ioam_trace_hdr_ {
      u16 namespace_id;
      u16 node_len_flags_remaining_len;
      u32 trace_type; // only 24-bits, last 8 is for reserved(=0)
+     //start of integrity hdr
+     u8 suite_id;
+	   u8 nonce_len;
+	   u16 _reserved;
+	   u8 nonce[12]; //suite id=1
+	   u8 icv[16]; //suite id=1
+     //end of integrity hdr
      u32 data_list[0];
  }) ioam_trace_hdr_t;
 

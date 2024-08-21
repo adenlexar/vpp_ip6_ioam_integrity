@@ -49,6 +49,7 @@ ip6_hbh_ioam_trace_reset_flag_bit (ioam_trace_option_t * trace, u32 flag_bit)
 {
   ioam_traceflag_reset_bit (&trace->trace_hdr, flag_bit);
 }
+
 #endif /* PLUGINS_IOAM_PLUGIN_IOAM_ENCAP_IP6_IOAM_TRACE_H_ */
 
 /*
