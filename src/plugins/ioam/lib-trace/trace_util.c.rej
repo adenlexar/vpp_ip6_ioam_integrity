@@ -1,0 +1,156 @@
+--- src/plugins/ioam/lib-trace/trace_util.c
++++ src/plugins/ioam/lib-trace/trace_util.c
+@@ -108,86 +111,88 @@ VLIB_CLI_COMMAND(clear_trace_profile_command) =
+ .short_help = "clear ioam-trace profile [<index>|all]",
+ .function = clear_trace_profile_command_fn,
+ };
+-/* *INDENT-ON* */
+-
+-static clib_error_t *
+-set_trace_profile_command_fn (vlib_main_t * vm,
+-			      unformat_input_t * input,
+-			      vlib_cli_command_t * cmd)
+-{
+-  u8 trace_type = 0;
+-  u8 num_elts = 0;
+-  u32 node_id = 0;
+-  u32 app_data = 0;
+-  u32 trace_tsp = 0;
+-  trace_profile *profile = NULL;
+-  while (unformat_check_input (input) != UNFORMAT_END_OF_INPUT)
+-    {
+-      if (unformat (input, "trace-type 0x%x", &trace_type));
+-      else if (unformat (input, "trace-elts %d", &num_elts));
+-      else if (unformat (input, "trace-tsp %d", &trace_tsp));
+-      else if (unformat (input, "node-id 0x%x", &node_id));
+-      else if (unformat (input, "app-data 0x%x", &app_data));
+-      else
+-	break;
+-    }
+-  profile = trace_profile_find ();
+-  if (profile)
+-    {
+-      trace_profile_create (profile, trace_type, num_elts, trace_tsp,
+-			    node_id, app_data);
+-    }
+-  return 0;
+-}
+ 
+-/* *INDENT-OFF* */
+-VLIB_CLI_COMMAND (set_trace_profile_command, static) =
+-{
+-.path = "set ioam-trace profile",
+-.short_help = "set ioam-trace \
+-             trace-type <0x1f|0x3|0x9|0x11|0x19> trace-elts <nn> trace-tsp <0|1|2|3> \
+-             node-id <node id in hex> app-data <app_data in hex>",
+-.function = set_trace_profile_command_fn,
+-};
+ /* *INDENT-ON* */
+-
+ static clib_error_t *
+-show_trace_profile_command_fn (vlib_main_t * vm,
+-			       unformat_input_t * input,
+-			       vlib_cli_command_t * cmd)
++show_trace_profile_command_fn (vlib_main_t * vm, unformat_input_t * input, vlib_cli_command_t * cmd)
+ {
+   trace_profile *p = NULL;
+-  u8 *s = 0;
+   p = trace_profile_find ();
++  u8 *s = 0;
+   if (!(p && p->valid))
+-    {
+-      s = format (s, "\nTrace configuration not valid\n");
+-      vlib_cli_output (vm, "%v", s);
+-      vec_free (s);
+-      return 0;
+-    }
++  {
++    s = format (s, "\nTrace configuration not valid\n");
++    vlib_cli_output (vm, "%v", s);
++    vec_free (s);
++    return 0;
++  }
+   s = format (s, " HOP BY HOP OPTIONS - TRACE CONFIG - \n");
+-  s = format (s, "                        Trace Type : 0x%x (%d)\n",
+-	      p->trace_type, p->trace_type);
++  s = format (s, "        iOAM Namespace      : %d\n",
++	      p->namespace_id);
++  s = format (s, "        iOAM Type           : %d ", p->option_type);
++  u8* stmp = 0;
++  if(p->option_type & IOAM_OPTION_PREALLOC)
++  {
++    stmp = format(stmp, " - Preallocation");
++  }
++  if(p->option_type & IOAM_OPTION_INCREMENT)
++  {
++    stmp = format(stmp, " - Incremental");
++  }
++  if(p->option_type & IOAM_OPTION_POT)
++  {
++    stmp = format(stmp, " - Proof-of-Transit");
++  }
++  if(p->option_type & IOAM_OPTION_E2E)
++  {
++    stmp = format(stmp, " - Edge-to-Edge");
++  }
++  s = format(s, "(%s)\n", stmp);
++  s = format (s, "        Trace Type          : 0x%x\n",
++	      p->trace_type);
+   s =
+-    format (s, "         Trace timestamp precision : %d (%s)\n",
+-	    p->trace_tsp,
+-	    (p->trace_tsp ==
+-	     TSP_SECONDS) ? "Seconds" : ((p->trace_tsp ==
+-					  TSP_MILLISECONDS) ?
++    format (s, "        Timestamp precision : %d (%s)\n",
++	    p->ts_format,
++	    (p->ts_format ==
++	     IOAM_TSP_SECONDS) ? "Seconds" : ((p->ts_format ==
++					  IOAM_TSP_MILLISECONDS) ?
+ 					 "Milliseconds"
+-					 : (((p->trace_tsp ==
+-					      TSP_MICROSECONDS) ?
++					 : (((p->ts_format ==
++					      IOAM_TSP_MICROSECONDS) ?
+ 					     "Microseconds" :
+ 					     "Nanoseconds"))));
+-  s = format (s, "                Num of trace nodes : %d\n", p->num_elts);
++  s = format (s, "        Num of trace nodes  : %d\n", p->num_elts);
++  s =
++    format (s, "        Node-ID-Short/Type  : %d / %s\n",
++	    p->node_id_short, 
++      (p->node_type == IOAM_NODE_ENCAP) ? "Encap" : 
++      ((p->node_type == IOAM_NODE_TRANSIT) ? "Transit" : "Decap"));
+   s =
+-    format (s, "                           Node-id : 0x%x (%d)\n",
+-	    p->node_id, p->node_id);
++    format (s, "        App Data-Short      : 0x%x\n",
++	    p->app_data_short);
+   s =
+-    format (s, "                          App Data : 0x%x (%d)\n",
+-	    p->app_data, p->app_data);
++    format (s, "        Node-ID-Wide/Type   : 0x%Lx / %s\n",
++	    p->node_id_wide, 
++      (p->node_type == IOAM_NODE_ENCAP) ? "Encap" : 
++      ((p->node_type == IOAM_NODE_TRANSIT) ? "Transit" : "Decap"));
++  s =
++    format (s, "        App Data-Wide       : 0x%Lx\n",
++	    p->app_data_wide);
++  s =
++    format (s, "        Queue Depth-Type    : %s\n",
++      (p->queue_depth_type == QUEUE_DEPTH_AF_PACKET) ? "AF_PACKET" : 
++      ((p->queue_depth_type == QUEUE_DEPTH_DPDK) ? "DPDK" : "NON"));
++  s = format (s, "        Opaque Length/ID    : %d / %d\n", 
++    IOAM_GET_OPAQUE_LEN(p->opaque.len_schemeid) << 2, p->opaque.len_schemeid & IOAM_OPAQUE_SCHEMEID_MASK);
++  if (IOAM_GET_OPAQUE_LEN(p->opaque.len_schemeid))
++  {
++    u32 indent = format_get_indent (s);
++    s = format (s, "        Opaque Data         : \n        %U%U", 
++                format_white_space, indent,
++                format_hex_bytes, p->opaque.data, IOAM_GET_OPAQUE_LEN(p->opaque.len_schemeid) << 2);
++  }
+   vlib_cli_output (vm, "%v", s);
++  vec_free (stmp);
+   vec_free (s);
+   return 0;
+ }
