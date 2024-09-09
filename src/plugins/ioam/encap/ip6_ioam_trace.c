@@ -430,14 +430,11 @@ ip6_hbh_ioam_trace_data_list_handler (vlib_buffer_t * b, ip6_header_t * ip, ip6_
     //get tag to retrieve
     u8 *tag_to_find = trace->trace_hdr.icv;
     u8 *tag_computed;
-
     //for each nodes : encap + transits
     u8 number_of_nodes = sizeof(trace->trace_hdr.data_list)/trace_data_size;
     u8 total_trace_size = sizeof(trace->trace_hdr.data_list)/4; //number of 32 bytes elem
-
     for(int node_i = 1; node_i<=number_of_nodes; node_i++){
       u8 data_index =  total_trace_size - node_i * trace_data_size/4;
-      
       if(node_i == 1){//encap
         vnet_crypto_op_t *op;
         if(ioam6_aes_256_gmac(op, &(trace->trace_hdr), NULL, data_index, trace_data_size)!=0){
@@ -455,7 +452,6 @@ ip6_hbh_ioam_trace_data_list_handler (vlib_buffer_t * b, ip6_header_t * ip, ip6_
         tag_computed = op->tag;
       }
     }
-
     //verification
     if(*tag_to_find!=*tag_computed){
       clib_warning("IOAM6 DATA INTEGRITY ERROR");
@@ -681,25 +677,20 @@ ip6_hbh_ioam_trace_data_list_handler (vlib_buffer_t * b, ip6_header_t * ip, ip6_
     }
 
     //INTEGRITY COMPUTATION ==========================================================================================
-
     //we start by setting all the headers fields needed for integrity 
     trace->trace_hdr.suite_id = 1;
 	  trace->trace_hdr.nonce_len = 12;
 	  //trace->trace_hdr._reserved = 0;
-      
     //create op object
     vnet_crypto_op_t *op;
     op->tag_len = 16; //for AES-256
     op->len = 0; //no plaintext for gmac
-
     u8 aad[260]; //max trace size = 244 bytes + ns and tracetype = 260 bytes 
     //trace->trace_hdr.namespace_id << 24 | (trace->trace_hdr.trace_type >> 8);trace->trace_hdr.data_list;
     u8 aad_len = 0;
-
     /* encap w/o AAD: ICV = GMAC(NS-ID || Trace-Type) */
     /* encap w/ AAD: ICV = GMAC(NS-ID || Trace-Type || AAD) */      
     if(profile->node_type & IOAM_NODE_ENCAP){
-      
       //add static nonce to packet
       trace->trace_hdr.nonce[0] = 0x02;
       trace->trace_hdr.nonce[1] = 0x04;
@@ -713,7 +704,6 @@ ip6_hbh_ioam_trace_data_list_handler (vlib_buffer_t * b, ip6_header_t * ip, ip6_
       trace->trace_hdr.nonce[9] = 0x07;
       trace->trace_hdr.nonce[10] = 0x0b;
       trace->trace_hdr.nonce[11] = 0x0f;
-
       if(ioam6_aes_256_gmac(op, &(trace->trace_hdr), elt_index, trace_data_size, 0)!=0){
         //ERREUR
         return;
@@ -726,7 +716,6 @@ ip6_hbh_ioam_trace_data_list_handler (vlib_buffer_t * b, ip6_header_t * ip, ip6_
         return;
       }
     }
-
     //get generated tag and copy it within the packet trace_hdr
     u8*tag = op->tag;
     trace->trace_hdr.icv[0] = tag[0];
@@ -746,7 +735,6 @@ ip6_hbh_ioam_trace_data_list_handler (vlib_buffer_t * b, ip6_header_t * ip, ip6_
     trace->trace_hdr.icv[14] = tag[14];
     trace->trace_hdr.icv[15] = tag[15];
     trace->trace_hdr.icv[16] = tag[16];
-
     //END OF INTEGRITY COMPUTATION ==================================================================================
 
     if (PREDICT_FALSE ((nlfrl_host & IOAM_FLAGS_MASK) & IOAM_BIT_FLAG_LOOPBACK))
