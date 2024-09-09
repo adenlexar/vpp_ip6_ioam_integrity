@@ -75,13 +75,10 @@ CRYPTO_NATIVE_KEY_HANDLER(gmac) = {
 ioam6_aes_256_gmac(vnet_crypto_op_t *op, ioam_trace_hdr_t *hdr, u8 *icv, u8 data_index, u8 trace_data_size){
   op->tag_len = 16; //for AES-256
   op->len = 0; //no plaintext for gmac
-
   u8 aad[260]; //max trace size = 244 bytes + ns and tracetype = 260 bytes 
   u8 aad_len = 0;
-
   //set op iv from trace nonce
   op->iv = hdr->nonce;
-
   if(icv == NULL){ //encap
       //concat ns-id and trace-type and data_list in my_aad
       memcpy(aad, &(hdr->namespace_id), 2);
@@ -98,17 +95,14 @@ ioam6_aes_256_gmac(vnet_crypto_op_t *op, ioam_trace_hdr_t *hdr, u8 *icv, u8 data
     memcpy(aad + 2, &(hdr->data_list[data_index]), trace_data_size);
     aad_len += trace_data_size;
   }
-
   //add my_aad to op
   op->aad = &aad; //set before
   op->aad_len = aad_len;
-
   //compute tag with handler
   if(gmac_ops_handler(vlib_main, &op, 1)!=0){
     //ERREUR
     return 1;
   }
-
   return 0;
 }
 //END OF INTEGRITY FUNCTIONS ==================================================================================
